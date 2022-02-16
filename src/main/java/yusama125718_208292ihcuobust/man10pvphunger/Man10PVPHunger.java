@@ -279,6 +279,33 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
                         return true;
                     }
                     arealist.remove(i);
+                    List<Double> savex = new ArrayList<>();
+                    List<Double> savey = new ArrayList<>();
+                    List<Double> savez = new ArrayList<>();
+                    List<String> saveworld = new ArrayList<>();
+                    List<String> savename = new ArrayList<>();
+                    for (int k = 0;k<arealist.size();k++)
+                    {
+                        for (String key : arealist.get(k).keySet())
+                        {
+                            for (int j = 0;j<arealist.get(k).get(key).size();j++)
+                            {
+                                Location location = null;
+                                assert false;
+                                savex.set(j,arealist.get(k).get(key).get(j).getX());
+                                savey.set(j,arealist.get(k).get(key).get(j).getY());
+                                savez.set(j,arealist.get(k).get(key).get(j).getZ());
+                                saveworld.set(j,arealist.get(k).get(key).get(j).getWorld().getName());
+                                savename.set(j,key);
+                            }
+                        }
+                    }
+                    mpvph.getConfig().set("areax",savex);
+                    mpvph.getConfig().set("areay",savey);
+                    mpvph.getConfig().set("areaz",savez);
+                    mpvph.getConfig().set("areaworld",saveworld);
+                    mpvph.getConfig().set("areaname",savename);
+                    mpvph.saveConfig();
                     sender.sendMessage("§b[Man10PVPHunger]§e削除しました");
                     return true;
                 }
