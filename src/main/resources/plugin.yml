@@ -1,0 +1,13 @@
+name: Man10PVPHunger
+version: '${project.version}'
+main: yusama125718_208292ihcuobust.man10pvphunger.Man10PVPHunger
+api-version: 1.17
+
+commands:
+  mpvph:
+    description: man10respawnanchor
+    usage: /<command> [text] [text] [text]
+
+permissions:
+  mpvph.op:
+    default: op
