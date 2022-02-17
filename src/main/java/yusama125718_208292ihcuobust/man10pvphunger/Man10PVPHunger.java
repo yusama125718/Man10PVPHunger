@@ -23,7 +23,8 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
 {
     JavaPlugin mpvph;
     boolean system;
-    boolean onadd = false;
+    public boolean onadd = false;
+    static String listname;
     int respawnfood;
     double respawnhealth;
     List<HashMap<String, List<Location>>> arealist = new ArrayList<>();
@@ -39,7 +40,7 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
         arealist.clear();
         this.mpvph = this;
         saveDefaultConfig();
-        system = mpvph.getConfig().getBoolean("System");
+        system = mpvph.getConfig().getBoolean("system");
         respawnhealth = mpvph.getConfig().getInt("respawnhealth");
         respawnfood = mpvph.getConfig().getInt("respawnfood");
         if (respawnhealth<1)
@@ -80,24 +81,22 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
         List<String> areaworld = new ArrayList<>(mpvph.getConfig().getStringList("areaworld"));
         List<String> areanamep = new ArrayList<>(mpvph.getConfig().getStringList("areaname"));
         int j = 0;
+        int k = 0;
         for (int i = 0;i<areaworld.size();i++)
         {
             World world = Bukkit.getServer().getWorld(areaworld.get(i));
-            Location Location1 = null;
-            assert false;
-            Location1.set(areax.get(j),areay.get(j),areaz.get(j));
-            Location1.setWorld(world);
+            Location Location1 = new Location(world,areax.get(j),areay.get(j),areaz.get(j));
             j++;
-            Location Location2 = null;
-            Location2.set(areax.get(j),areay.get(j),areaz.get(j));
-            Location2.setWorld(world);
+            Location Location2 = new Location(world,areax.get(j),areay.get(j),areaz.get(j));
             j++;
             List<Location> Locationlist = new ArrayList<>();
             Locationlist.add(Location1);
             Locationlist.add(Location2);
             HashMap<String, List<Location>> addhash = new HashMap<>();
             addhash.put(areanamep.get(i), Locationlist);
-            arealist.set(i,addhash);
+            arealist.add(k,addhash);
+            k++;
+            i++;
         }
         getServer().getPluginManager().registerEvents(this, this);
     }
@@ -125,6 +124,7 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
                     sender.sendMessage("§b[Man10PVPHunger]§7 /mpvph [on/off] §e: システムをon/offします");
                     sender.sendMessage("§b[Man10PVPHunger]§7 /mpvph add [エリア名] §e: 現在地をPVPエリアの角にセットします。移動してもう一回実行するとエリアを作ります。");
                     sender.sendMessage("§b[Man10PVPHunger]§7 /mpvph delete [エリア名] §e: PVPエリアを消去します");
+                    sender.sendMessage("§b[Man10PVPHunger]§7 /mpvph cancel §e: エリアの追加をキャンセルします");
                 }
                 if (args[0].equals("on"))
                 {
@@ -154,34 +154,88 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
                 }
                 if (args[0].equals("start"))
                 {
-                    if ((pvpplayer.containsKey(((Player) sender).getUniqueId()))&&!system)
+                    if (!system)
                     {
+                        sender.sendMessage("§b[Man10PVPHunger]§c現在OFFです");
                         return true;
                     }
-                    pvpplayer.put(((Player) sender).getUniqueId(),((Player) sender).getFoodLevel());
+                    if ((pvpplayer.containsKey(((Player) sender).getUniqueId())))
+                    {
+                        sender.sendMessage("§b[Man10PVPHunger]§cすでに有効です");
+                        return true;
+                    }
+                    int i=0;
+                    aaa: for (i=0;i<arealist.size();i++)
+                    {
+                        for (String key : arealist.get(i).keySet())
+                        {
+                            if (arealist.get(i).get(key).get(0).getWorld().equals(((Player)sender).getLocation().getWorld()))
+                            {
+                                if (arealist.get(i).get(key).get(0).getX() < ((Player)sender).getLocation().getX()&&((Player)sender).getLocation().getX() < arealist.get(i).get(key).get(1).getX())
+                                {
+                                    if (arealist.get(i).get(key).get(0).getY() < ((Player)sender).getLocation().getY()&&((Player)sender).getLocation().getY() < arealist.get(i).get(key).get(1).getY())
+                                    {
+                                        if ((arealist.get(i).get(key).get(0).getZ() < ((Player)sender).getLocation().getZ()&&((Player)sender).getLocation().getZ() < arealist.get(i).get(key).get(1).getZ()))
+                                        {
+                                            break aaa;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (i<arealist.size())
+                    {
+                        pvpplayer.put(((Player) sender).getUniqueId(),((Player) sender).getFoodLevel());
+                        ((Player) sender).getPlayer().setFoodLevel(respawnfood);
+                        ((Player) sender).getPlayer().setHealth(respawnhealth);
+                        sender.sendMessage("§b[Man10PVPHunger]§ePVPモードを有効化します");
+                    }
+                    else
+                    {
+                        sender.sendMessage("§b[Man10PVPHunger]§ePVPエリアの外では有効化できません！");
+                    }
                     return true;
                 }
+                if (args[0].equals("cancel"))
+                {
+                    if (!onadd)
+                    {
+                        sender.sendMessage("§b[Man10PVPHunger]§e現在追加中ではありません");
+                    }
+                    onadd = false;
+                    sender.sendMessage("§b[Man10PVPHunger]§eキャンセルしました");
+                    return true;
+                }
+                break;
             }
             case 2:
             {
+                List<Double> savex = new ArrayList<>();
+                List<Double> savey = new ArrayList<>();
+                List<Double> savez = new ArrayList<>();
+                List<String> saveworld = new ArrayList<>();
+                List<String> savename = new ArrayList<>();
                 if (args[0].equals("add"))
                 {
-                    String listname = null;
                     if (onadd)
                     {
-                        if (!(((Player) sender).getLocation().getWorld() == addlocation.get(0).getWorld()))
-                        {
-                            sender.sendMessage("§b[Man10PVPHunger]§cワールドが変わっています");
-                            return true;
-                        }
-                        if (!listname.equals(args[1]))
-                        {
-                            sender.sendMessage("§b[Man10PVPHunger]§c名前が変わっています");
-                            return true;
-                        }
                         Location setlocation1 = addlocation.get(0);
                         Location setlocation2 = addlocation.get(0);
-                        if (((Player) sender).getLocation().getX() < addlocation.get(0).getX())
+                        addlocation.clear();
+                        if (!(((Player) sender).getLocation().getWorld() == setlocation1.getWorld()))
+                        {
+                            sender.sendMessage("§b[Man10PVPHunger]§cワールドが変わっています");
+                            onadd = false;
+                            return true;
+                        }
+                        if (!(listname.equals(args[1])))
+                        {
+                            sender.sendMessage("§b[Man10PVPHunger]§c名前が変わっています");
+                            onadd = false;
+                            return true;
+                        }
+                        if (((Player) sender).getLocation().getX() < setlocation1.getX())
                         {
                             setlocation1.setX(((Player) sender).getLocation().getX());
                         }
@@ -189,7 +243,7 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
                         {
                             setlocation2.setX(((Player) sender).getLocation().getX());
                         }
-                        if (((Player) sender).getLocation().getY() < addlocation.get(0).getY())
+                        if (((Player) sender).getLocation().getY() < setlocation1.getY())
                         {
                             setlocation1.setY(((Player) sender).getLocation().getY());
                         }
@@ -197,7 +251,7 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
                         {
                             setlocation2.setY(((Player) sender).getLocation().getY());
                         }
-                        if (((Player) sender).getLocation().getZ() < addlocation.get(0).getZ())
+                        if (((Player) sender).getLocation().getZ() < setlocation1.getZ())
                         {
                             setlocation1.setZ(((Player) sender).getLocation().getZ());
                         }
@@ -205,31 +259,23 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
                         {
                             setlocation2.setZ(((Player) sender).getLocation().getZ());
                         }
-                        setlocation2.setWorld(setlocation1.getWorld());
-                        addlocation.set(0, setlocation1);
-                        addlocation.set(1, setlocation2);
+                        addlocation.add(0,setlocation1);
+                        addlocation.add(1,setlocation2);
                         HashMap<String,List<Location>> addlist = new HashMap<>();
                         addlist.put(args[1],addlocation);
                         arealist.add(addlist);
                         onadd = false;
-                        List<Double> savex = new ArrayList<>();
-                        List<Double> savey = new ArrayList<>();
-                        List<Double> savez = new ArrayList<>();
-                        List<String> saveworld = new ArrayList<>();
-                        List<String> savename = new ArrayList<>();
-                        for (int i = 0;i<arealist.size();i++)
+                        for (HashMap<String, List<Location>> stringListHashMap : arealist)
                         {
-                            for (String key : arealist.get(i).keySet())
+                            for (String key : stringListHashMap.keySet())
                             {
-                                for (int j = 0;j<arealist.get(i).get(key).size();j++)
+                                for (int j = 0; j <= 1; j++)
                                 {
-                                    Location location = null;
-                                    assert false;
-                                    savex.set(j,arealist.get(i).get(key).get(j).getX());
-                                    savey.set(j,arealist.get(i).get(key).get(j).getY());
-                                    savez.set(j,arealist.get(i).get(key).get(j).getZ());
-                                    saveworld.set(j,arealist.get(i).get(key).get(j).getWorld().getName());
-                                    savename.set(j,key);
+                                    savex.add(stringListHashMap.get(key).get(j).getX());
+                                    savey.add(stringListHashMap.get(key).get(j).getY());
+                                    savez.add(stringListHashMap.get(key).get(j).getZ());
+                                    saveworld.add(stringListHashMap.get(key).get(j).getWorld().getName());
+                                    savename.add(key);
                                 }
                             }
                         }
@@ -245,20 +291,26 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
                     else
                     {
                         listname = args[1];
+                        for (HashMap<String, List<Location>> stringListHashMap : arealist)
+                        {
+                            if (stringListHashMap.containsKey(listname))
+                            {
+                                sender.sendMessage("§b[Man10PVPHunger]§cその名前は既に使われています");
+                                return true;
+                            }
+                        }
                         addlocation.add(((Player) sender).getLocation());
                         onadd = true;
-                        Addtimer addtimer = new Addtimer();
-                        addtimer.start();
-                        try
+                        sender.sendMessage("§b[Man10PVPHunger]§e範囲の対角の地点でもう一度同じコマンドを実行してください");
+                        Bukkit.getScheduler().runTaskLater(this, new Runnable()
                         {
-                            addtimer.join();
-                        }
-                        catch (InterruptedException e)
-                        {
-                            e.printStackTrace();
-                        }
-                        onadd = false;
-                        addlocation.clear();
+                            @Override
+                            public void run()
+                            {
+                                onadd = false;
+                                addlocation.clear();
+                            }
+                        }, 600);
                     }
                     return true;
                 }
@@ -266,49 +318,40 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
                 {
                     String listname = args [1];
                     int i = 0;
-                    aaa: for (i=0;i<arealist.size();i++)
+                    aaa: for (HashMap<String, List<Location>> stringListHashMap : arealist)
                     {
-                        if (arealist.get(i).containsKey(listname))
+                        if (stringListHashMap.containsKey(listname))
                         {
-                            break aaa;
-                        }
-                    }
-                    if (i > arealist.size())
-                    {
-                        sender.sendMessage("§b[Man10PVPHunger]§cそのエリアは存在しません");
-                        return true;
-                    }
-                    arealist.remove(i);
-                    List<Double> savex = new ArrayList<>();
-                    List<Double> savey = new ArrayList<>();
-                    List<Double> savez = new ArrayList<>();
-                    List<String> saveworld = new ArrayList<>();
-                    List<String> savename = new ArrayList<>();
-                    for (int k = 0;k<arealist.size();k++)
-                    {
-                        for (String key : arealist.get(k).keySet())
-                        {
-                            for (int j = 0;j<arealist.get(k).get(key).size();j++)
+                            arealist.remove(i);
+                            for (HashMap<String, List<Location>> stringListHashMap1 : arealist)
                             {
-                                Location location = null;
-                                assert false;
-                                savex.set(j,arealist.get(k).get(key).get(j).getX());
-                                savey.set(j,arealist.get(k).get(key).get(j).getY());
-                                savez.set(j,arealist.get(k).get(key).get(j).getZ());
-                                saveworld.set(j,arealist.get(k).get(key).get(j).getWorld().getName());
-                                savename.set(j,key);
+                                for (String key : stringListHashMap1.keySet())
+                                {
+                                    for (int j = 0; j <= 1; j++)
+                                    {
+                                        savex.add(stringListHashMap1.get(key).get(j).getX());
+                                        savey.add(stringListHashMap1.get(key).get(j).getY());
+                                        savez.add(stringListHashMap1.get(key).get(j).getZ());
+                                        saveworld.add(stringListHashMap1.get(key).get(j).getWorld().getName());
+                                        savename.add(key);
+                                    }
+                                }
                             }
+                            mpvph.getConfig().set("areax",savex);
+                            mpvph.getConfig().set("areay",savey);
+                            mpvph.getConfig().set("areaz",savez);
+                            mpvph.getConfig().set("areaworld",saveworld);
+                            mpvph.getConfig().set("areaname",savename);
+                            mpvph.saveConfig();
+                            sender.sendMessage("§b[Man10PVPHunger]§e削除しました");
+                            return true;
                         }
+                        i++;
                     }
-                    mpvph.getConfig().set("areax",savex);
-                    mpvph.getConfig().set("areay",savey);
-                    mpvph.getConfig().set("areaz",savez);
-                    mpvph.getConfig().set("areaworld",saveworld);
-                    mpvph.getConfig().set("areaname",savename);
-                    mpvph.saveConfig();
-                    sender.sendMessage("§b[Man10PVPHunger]§e削除しました");
+                    sender.sendMessage("§b[Man10PVPHunger]§cそのエリアは存在しません");
                     return true;
                 }
+                break;
             }
             default:
             {
@@ -319,6 +362,7 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
                 return true;
             }
         }
+        return true;
     }
 
     @EventHandler
@@ -331,9 +375,18 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
             {
                 for (String key : arealist.get(1).keySet())
                 {
-                    if ((arealist.get(i).get(key).get(0).getWorld()).equals(event.getPlayer().getLocation().getWorld())&&(arealist.get(i).get(key).get(0).getX() < event.getTo().getX()&&event.getTo().getX() < arealist.get(i).get(key).get(1).getX()&&(arealist.get(i).get(key).get(0).getY()<event.getTo().getY()&&event.getTo().getY() <arealist.get(i).get(key).get(1).getY())&&(arealist.get(i).get(key).get(0).getZ()<event.getTo().getZ()&&event.getTo().getZ() <arealist.get(i).get(key).get(1).getZ())))
+                    if (arealist.get(i).get(key).get(0).getWorld().equals(event.getPlayer().getLocation().getWorld()))
                     {
-                        break aaa;
+                        if (arealist.get(i).get(key).get(0).getX() < event.getTo().getX()&&event.getTo().getX() < arealist.get(i).get(key).get(1).getX())
+                        {
+                            if (arealist.get(i).get(key).get(0).getY() < event.getTo().getY()&&event.getTo().getY() < arealist.get(i).get(key).get(1).getY())
+                            {
+                                if (arealist.get(i).get(key).get(0).getZ() < event.getTo().getZ()&&event.getTo().getZ() < arealist.get(i).get(key).get(1).getZ())
+                                {
+                                    break aaa;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -341,6 +394,7 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
             {
                 event.getPlayer().setFoodLevel(pvpplayer.get(event.getPlayer().getUniqueId()));
                 pvpplayer.remove(event.getPlayer().getUniqueId());
+                event.getPlayer().sendMessage("§b[Man10PVPHunger]§ePVPモードを無効化します");
             }
         }
     }
