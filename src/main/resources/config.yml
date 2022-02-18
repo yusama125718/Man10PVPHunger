@@ -3,8 +3,4 @@ respawnhealth: 20
 respawnfood: 20
 exitplayerlist:
 exithungerlist:
-areax:
-areay:
-areaz:
-areaworld:
-areaname:
+targetworld:

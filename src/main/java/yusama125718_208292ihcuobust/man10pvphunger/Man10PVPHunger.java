@@ -1,6 +1,7 @@
 package yusama125718_208292ihcuobust.man10pvphunger;
 
 import com.sun.org.apache.xerces.internal.xs.StringList;
+import jdk.javadoc.internal.tool.Start;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -11,10 +12,7 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.*;
@@ -23,21 +21,16 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
 {
     JavaPlugin mpvph;
     boolean system;
-    public boolean onadd = false;
-    static String listname;
     int respawnfood;
     double respawnhealth;
-    List<HashMap<String, List<Location>>> arealist = new ArrayList<>();
-    List<Location> addlocation = new ArrayList<>();
     List<UUID> exsitplayer = new ArrayList<>();
     List<Integer> exsitHunger = new ArrayList<>();
     HashMap<UUID, Integer> pvpplayer = new HashMap<>();
+    List<String> targetworld = new ArrayList<>();
 
     @Override
     public void onEnable()
     {
-        pvpplayer.clear();
-        arealist.clear();
         this.mpvph = this;
         saveDefaultConfig();
         system = mpvph.getConfig().getBoolean("system");
@@ -47,7 +40,7 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
         {
             respawnhealth = 1;
         }
-        if (respawnhealth>20)
+        else if (respawnhealth>20)
         {
             respawnhealth = 20;
         }
@@ -55,48 +48,9 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
         {
             respawnfood = 0;
         }
-        if (respawnfood>20)
+        else if (respawnfood>20)
         {
             respawnfood = 20;
-        }
-        try
-        {
-            for (int i = 0; i < Objects.requireNonNull(mpvph.getConfig().getList("exitplayerlist")).size(); i++)
-            {
-                exsitplayer.add((UUID) (Objects.requireNonNull(mpvph.getConfig().getList("exitplayerlist"))).get(i));
-            }
-        }
-        catch (NullPointerException e)
-        {
-            Bukkit.broadcast("§l[§fMan10Spawn§f§l]§途中退出したプレイヤーのロードに失敗しました","mpvph.op");
-        }
-        exsitHunger.addAll(mpvph.getConfig().getIntegerList("exithungerlist"));
-        for (int i = 0;i<exsitplayer.size();i++)
-        {
-            pvpplayer.put(exsitplayer.get(i),exsitHunger.get(i));
-        }
-        List<Double> areax = new ArrayList<>(mpvph.getConfig().getDoubleList("areax"));
-        List<Double> areay = new ArrayList<>(mpvph.getConfig().getDoubleList("areay"));
-        List<Double> areaz = new ArrayList<>(mpvph.getConfig().getDoubleList("areaz"));
-        List<String> areaworld = new ArrayList<>(mpvph.getConfig().getStringList("areaworld"));
-        List<String> areanamep = new ArrayList<>(mpvph.getConfig().getStringList("areaname"));
-        int j = 0;
-        int k = 0;
-        for (int i = 0;i<areaworld.size();i++)
-        {
-            World world = Bukkit.getServer().getWorld(areaworld.get(i));
-            Location Location1 = new Location(world,areax.get(j),areay.get(j),areaz.get(j));
-            j++;
-            Location Location2 = new Location(world,areax.get(j),areay.get(j),areaz.get(j));
-            j++;
-            List<Location> Locationlist = new ArrayList<>();
-            Locationlist.add(Location1);
-            Locationlist.add(Location2);
-            HashMap<String, List<Location>> addhash = new HashMap<>();
-            addhash.put(areanamep.get(i), Locationlist);
-            arealist.add(k,addhash);
-            k++;
-            i++;
         }
         getServer().getPluginManager().registerEvents(this, this);
     }
@@ -113,18 +67,13 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
         {
             case 1:
             {
-                if (!sender.hasPermission("mpvph.op"))
-                {
-                    sender.sendMessage("§c[Man10PVPHunger]You don't have permissions!");
-                    return true;
-                }
                 if (args[0].equals("help"))
                 {
-                    sender.sendMessage("§b[Man10PVPHunger]§7 /mpvph start §e: 自分をPVPモードにします");
                     sender.sendMessage("§b[Man10PVPHunger]§7 /mpvph [on/off] §e: システムをon/offします");
-                    sender.sendMessage("§b[Man10PVPHunger]§7 /mpvph add [エリア名] §e: 現在地をPVPエリアの角にセットします。移動してもう一回実行するとエリアを作ります。");
-                    sender.sendMessage("§b[Man10PVPHunger]§7 /mpvph delete [エリア名] §e: PVPエリアを消去します");
-                    sender.sendMessage("§b[Man10PVPHunger]§7 /mpvph cancel §e: エリアの追加をキャンセルします");
+                    sender.sendMessage("§b[Man10PVPHunger]§7 /mpvph sethealth [体力] §e: PVP中のリスポーン時の体力を設定します");
+                    sender.sendMessage("§b[Man10PVPHunger]§7 /mpvph setfood [満腹度] §e: PVP中のリスポーン時の満腹度を設定します");
+                    sender.sendMessage("§b[Man10PVPHunger]§7 /mpvph add [ワールド名] §e: 指定したワールドをPVPワールドにします");
+                    sender.sendMessage("§b[Man10PVPHunger]§7 /mpvph delete [ワールド名] §e: PVPエリアを消去します");
                 }
                 if (args[0].equals("on"))
                 {
@@ -152,213 +101,103 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
                     sender.sendMessage("§b[Man10PVPHunger]§eOFFにしました");
                     return true;
                 }
-                if (args[0].equals("start"))
-                {
-                    if (!system)
-                    {
-                        sender.sendMessage("§b[Man10PVPHunger]§c現在OFFです");
-                        return true;
-                    }
-                    if ((pvpplayer.containsKey(((Player) sender).getUniqueId())))
-                    {
-                        sender.sendMessage("§b[Man10PVPHunger]§cすでに有効です");
-                        return true;
-                    }
-                    int i=0;
-                    aaa: for (i=0;i<arealist.size();i++)
-                    {
-                        for (String key : arealist.get(i).keySet())
-                        {
-                            if (arealist.get(i).get(key).get(0).getWorld().equals(((Player)sender).getLocation().getWorld()))
-                            {
-                                if (arealist.get(i).get(key).get(0).getX() < ((Player)sender).getLocation().getX()&&((Player)sender).getLocation().getX() < arealist.get(i).get(key).get(1).getX())
-                                {
-                                    if (arealist.get(i).get(key).get(0).getY() < ((Player)sender).getLocation().getY()&&((Player)sender).getLocation().getY() < arealist.get(i).get(key).get(1).getY())
-                                    {
-                                        if ((arealist.get(i).get(key).get(0).getZ() < ((Player)sender).getLocation().getZ()&&((Player)sender).getLocation().getZ() < arealist.get(i).get(key).get(1).getZ()))
-                                        {
-                                            break aaa;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (i<arealist.size())
-                    {
-                        pvpplayer.put(((Player) sender).getUniqueId(),((Player) sender).getFoodLevel());
-                        ((Player) sender).getPlayer().setFoodLevel(respawnfood);
-                        ((Player) sender).getPlayer().setHealth(respawnhealth);
-                        sender.sendMessage("§b[Man10PVPHunger]§ePVPモードを有効化します");
-                    }
-                    else
-                    {
-                        sender.sendMessage("§b[Man10PVPHunger]§ePVPエリアの外では有効化できません！");
-                    }
-                    return true;
-                }
-                if (args[0].equals("cancel"))
-                {
-                    if (!onadd)
-                    {
-                        sender.sendMessage("§b[Man10PVPHunger]§e現在追加中ではありません");
-                    }
-                    onadd = false;
-                    sender.sendMessage("§b[Man10PVPHunger]§eキャンセルしました");
-                    return true;
-                }
                 break;
             }
             case 2:
             {
-                List<Double> savex = new ArrayList<>();
-                List<Double> savey = new ArrayList<>();
-                List<Double> savez = new ArrayList<>();
-                List<String> saveworld = new ArrayList<>();
-                List<String> savename = new ArrayList<>();
                 if (args[0].equals("add"))
                 {
-                    if (onadd)
+                    String addworld = args[1];
+                    List<String> worlds = new ArrayList<>();
+                    for (int i = 0; i<Bukkit.getWorlds().size(); i++)
                     {
-                        Location setlocation1 = addlocation.get(0);
-                        Location setlocation2 = addlocation.get(0);
-                        addlocation.clear();
-                        if (!(((Player) sender).getLocation().getWorld() == setlocation1.getWorld()))
-                        {
-                            sender.sendMessage("§b[Man10PVPHunger]§cワールドが変わっています");
-                            onadd = false;
-                            return true;
-                        }
-                        if (!(listname.equals(args[1])))
-                        {
-                            sender.sendMessage("§b[Man10PVPHunger]§c名前が変わっています");
-                            onadd = false;
-                            return true;
-                        }
-                        if (((Player) sender).getLocation().getX() < setlocation1.getX())
-                        {
-                            setlocation1.setX(((Player) sender).getLocation().getX());
-                        }
-                        else
-                        {
-                            setlocation2.setX(((Player) sender).getLocation().getX());
-                        }
-                        if (((Player) sender).getLocation().getY() < setlocation1.getY())
-                        {
-                            setlocation1.setY(((Player) sender).getLocation().getY());
-                        }
-                        else
-                        {
-                            setlocation2.setY(((Player) sender).getLocation().getY());
-                        }
-                        if (((Player) sender).getLocation().getZ() < setlocation1.getZ())
-                        {
-                            setlocation1.setZ(((Player) sender).getLocation().getZ());
-                        }
-                        else
-                        {
-                            setlocation2.setZ(((Player) sender).getLocation().getZ());
-                        }
-                        addlocation.add(0,setlocation1);
-                        addlocation.add(1,setlocation2);
-                        HashMap<String,List<Location>> addlist = new HashMap<>();
-                        addlist.put(args[1],addlocation);
-                        arealist.add(addlist);
-                        onadd = false;
-                        for (HashMap<String, List<Location>> stringListHashMap : arealist)
-                        {
-                            for (String key : stringListHashMap.keySet())
-                            {
-                                for (int j = 0; j <= 1; j++)
-                                {
-                                    savex.add(stringListHashMap.get(key).get(j).getX());
-                                    savey.add(stringListHashMap.get(key).get(j).getY());
-                                    savez.add(stringListHashMap.get(key).get(j).getZ());
-                                    saveworld.add(stringListHashMap.get(key).get(j).getWorld().getName());
-                                    savename.add(key);
-                                }
-                            }
-                        }
-                        mpvph.getConfig().set("areax",savex);
-                        mpvph.getConfig().set("areay",savey);
-                        mpvph.getConfig().set("areaz",savez);
-                        mpvph.getConfig().set("areaworld",saveworld);
-                        mpvph.getConfig().set("areaname",savename);
-                        mpvph.saveConfig();
-                        sender.sendMessage("§b[Man10PVPHunger]§e追加しました");
+                        worlds.add(Bukkit.getWorlds().get(i).getName());
+                    }
+                    if (!worlds.contains(addworld))
+                    {
+                        sender.sendMessage("§b[Man10PVPHunger]§cそのワールドは存在しません");
                         return true;
                     }
-                    else
+                    if (targetworld.contains(addworld))
                     {
-                        listname = args[1];
-                        for (HashMap<String, List<Location>> stringListHashMap : arealist)
-                        {
-                            if (stringListHashMap.containsKey(listname))
-                            {
-                                sender.sendMessage("§b[Man10PVPHunger]§cその名前は既に使われています");
-                                return true;
-                            }
-                        }
-                        addlocation.add(((Player) sender).getLocation());
-                        onadd = true;
-                        sender.sendMessage("§b[Man10PVPHunger]§e範囲の対角の地点でもう一度同じコマンドを実行してください");
-                        Bukkit.getScheduler().runTaskLater(this, new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                onadd = false;
-                                addlocation.clear();
-                            }
-                        }, 600);
+                        sender.sendMessage("§b[Man10PVPHunger]§cそのワールドはすでに対象です");
+                        return true;
                     }
-                    return true;
+                    targetworld.add(addworld);
+                    mpvph.getConfig().set("targetworld",targetworld);
+                    saveConfig();
+                    sender.sendMessage("§b[Man10PVPHunger]§eワールドを対象にしました");
+                    return  true;
                 }
                 if (args[0].equals("delete"))
                 {
-                    String listname = args [1];
-                    int i = 0;
-                    aaa: for (HashMap<String, List<Location>> stringListHashMap : arealist)
+                    String deleteworld = args[1];
+                    List<String> worlds = new ArrayList<>();
+                    for (int i = 0; i<Bukkit.getWorlds().size(); i++)
                     {
-                        if (stringListHashMap.containsKey(listname))
-                        {
-                            arealist.remove(i);
-                            for (HashMap<String, List<Location>> stringListHashMap1 : arealist)
-                            {
-                                for (String key : stringListHashMap1.keySet())
-                                {
-                                    for (int j = 0; j <= 1; j++)
-                                    {
-                                        savex.add(stringListHashMap1.get(key).get(j).getX());
-                                        savey.add(stringListHashMap1.get(key).get(j).getY());
-                                        savez.add(stringListHashMap1.get(key).get(j).getZ());
-                                        saveworld.add(stringListHashMap1.get(key).get(j).getWorld().getName());
-                                        savename.add(key);
-                                    }
-                                }
-                            }
-                            mpvph.getConfig().set("areax",savex);
-                            mpvph.getConfig().set("areay",savey);
-                            mpvph.getConfig().set("areaz",savez);
-                            mpvph.getConfig().set("areaworld",saveworld);
-                            mpvph.getConfig().set("areaname",savename);
-                            mpvph.saveConfig();
-                            sender.sendMessage("§b[Man10PVPHunger]§e削除しました");
-                            return true;
-                        }
-                        i++;
+                        worlds.add(Bukkit.getWorlds().get(i).getName());
                     }
-                    sender.sendMessage("§b[Man10PVPHunger]§cそのエリアは存在しません");
+                    if (!worlds.contains(deleteworld))
+                    {
+                        sender.sendMessage("§b[Man10PVPHunger]§cそのワールドは存在しません");
+                        return true;
+                    }
+                    if (!targetworld.contains(deleteworld))
+                    {
+                        sender.sendMessage("§b[Man10PVPHunger]§cそのワールドは追加されていません");
+                        return true;
+                    }
+                    targetworld.remove(deleteworld);
+                    mpvph.getConfig().set("targetworld",targetworld);
+                    saveConfig();
+                    sender.sendMessage("§b[Man10PVPHunger]§eワールドを対象から削除しました");
+                    return true;
+                }
+                if (args[0].equals("sethealth"))
+                {
+                    boolean isNumeric = args[1].matches("-?\\d+");
+                    if (!isNumeric)
+                    {
+                        sender.sendMessage("§b[Man10PVPHunger]§c体力は整数にしてください");
+                        return true;
+                    }
+                    int sethealth = Integer.parseInt(args[1]);
+                    if (sethealth>20||sethealth<1)
+                    {
+                        sender.sendMessage("§b[Man10PVPHunger]§c体力は1以上20以下の数字にしてください");
+                        return true;
+                    }
+                    respawnhealth = sethealth;
+                    mpvph.getConfig().set("respawnhealth",sethealth);
+                    saveConfig();
+                    sender.sendMessage("§b[Man10PVPHunger]§e設定しました");
+                    return true;
+                }
+                if (args[0].equals("setfood"))
+                {
+                    boolean isNumeric = args[1].matches("-?\\d+");
+                    if (!isNumeric)
+                    {
+                        sender.sendMessage("§b[Man10PVPHunger]§c満腹度は整数にしてください");
+                        return true;
+                    }
+                    int setfood = Integer.parseInt(args[1]);
+                    if (setfood>20||setfood<0)
+                    {
+                        sender.sendMessage("§b[Man10PVPHunger]§c満腹度は0以上20以下の数字にしてください");
+                        return true;
+                    }
+                    respawnfood = setfood;
+                    mpvph.getConfig().set("respawnfood",setfood);
+                    saveConfig();
+                    sender.sendMessage("§b[Man10PVPHunger]§e設定しました");
                     return true;
                 }
                 break;
             }
             default:
             {
-                if (sender.hasPermission("mpvph.op"))
-                {
-                    sender.sendMessage("§b[Man10PVPHunger]§r/mpvph help でコマンドを確認できます");
-                }
+                sender.sendMessage("§b[Man10PVPHunger]§r/mpvph help でコマンドを確認できます");
                 return true;
             }
         }
@@ -366,43 +205,9 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
     }
 
     @EventHandler
-    public void PlayerMoveEvent(PlayerMoveEvent event)
-    {
-        if (system&&pvpplayer.containsKey(event.getPlayer().getUniqueId()))
-        {
-            int i=0;
-            aaa: for (i=0;i<arealist.size();i++)
-            {
-                for (String key : arealist.get(1).keySet())
-                {
-                    if (arealist.get(i).get(key).get(0).getWorld().equals(event.getPlayer().getLocation().getWorld()))
-                    {
-                        if (arealist.get(i).get(key).get(0).getX() < event.getTo().getX()&&event.getTo().getX() < arealist.get(i).get(key).get(1).getX())
-                        {
-                            if (arealist.get(i).get(key).get(0).getY() < event.getTo().getY()&&event.getTo().getY() < arealist.get(i).get(key).get(1).getY())
-                            {
-                                if (arealist.get(i).get(key).get(0).getZ() < event.getTo().getZ()&&event.getTo().getZ() < arealist.get(i).get(key).get(1).getZ())
-                                {
-                                    break aaa;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            if (i<arealist.size())
-            {
-                event.getPlayer().setFoodLevel(pvpplayer.get(event.getPlayer().getUniqueId()));
-                pvpplayer.remove(event.getPlayer().getUniqueId());
-                event.getPlayer().sendMessage("§b[Man10PVPHunger]§ePVPモードを無効化します");
-            }
-        }
-    }
-
-    @EventHandler
     public void PlayerRespawnEvent(PlayerRespawnEvent event)
     {
-        Location playerlocation = event.getPlayer().getLocation();
+        System.out.println(pvpplayer);
         if (pvpplayer.containsKey(event.getPlayer().getUniqueId())&&system)
         {
             Bukkit.getScheduler().runTaskLater(this, new Runnable()
@@ -413,66 +218,164 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
                     event.getPlayer().setHealth(respawnhealth);
                     event.getPlayer().setFoodLevel(respawnfood);
                 }
-            }, 10);
+            }, 1);
         }
     }
 
     @EventHandler
     public void PlayerQuitEvent(PlayerQuitEvent event)
     {
-        int i=0;
-        aaa: for (i=0;i<arealist.size();i++)
+        if (pvpplayer.containsKey(event.getPlayer().getUniqueId()))
         {
-            for (String key : arealist.get(1).keySet())
+            try
             {
-                if ((arealist.get(i).get(key).get(0).getWorld()).equals(event.getPlayer().getLocation().getWorld())&&(arealist.get(i).get(key).get(0).getX() < event.getPlayer().getLocation().getX()&&event.getPlayer().getLocation().getX() < arealist.get(i).get(key).get(0).getX()&&(arealist.get(i).get(key).get(0).getY()<event.getPlayer().getLocation().getY()&&event.getPlayer().getLocation().getY() <arealist.get(i).get(key).get(0).getY())&&(arealist.get(i).get(key).get(0).getZ()<event.getPlayer().getLocation().getZ()&&event.getPlayer().getLocation().getZ() <arealist.get(i).get(key).get(0).getZ())))
+                for (int i = 0; i < Objects.requireNonNull(mpvph.getConfig().getList("exitplayerlist")).size(); i++)
                 {
-                    break aaa;
+                    exsitplayer.add((UUID) (Objects.requireNonNull(mpvph.getConfig().getList("exitplayerlist"))).get(i));
                 }
             }
-        }
-        if (i<arealist.size())
-        {
+            catch (NullPointerException e)
+            {
+                System.out.println("§l[§fMan10Spawn§f§l]§途中退出したプレイヤーのロードに失敗しました");
+            }
+            exsitHunger.addAll(mpvph.getConfig().getIntegerList("exithungerlist"));
             exsitplayer.add(event.getPlayer().getUniqueId());
             exsitHunger.add(pvpplayer.get(event.getPlayer().getUniqueId()));
             pvpplayer.remove(event.getPlayer().getUniqueId());
+            mpvph.getConfig().set("exitplayerlist",exsitplayer);
+            mpvph.getConfig().set("exithungerlist",exsitHunger);
+            mpvph.saveConfig();
+            exsitplayer.clear();
+            exsitHunger.clear();
         }
     }
 
     @EventHandler
     public void PlayerJoinEvent(PlayerJoinEvent event)
     {
-        if (exsitplayer.contains(event.getPlayer().getUniqueId())&&system)
+        if (system)
         {
-            int i = 0;
-            aaa: for (i=0;i<exsitplayer.size();i++)
+            try
             {
-                if (exsitplayer.get(i).equals(event.getPlayer().getUniqueId()))
+                for (int i = 0; i < Objects.requireNonNull(mpvph.getConfig().getList("exitplayerlist")).size(); i++)
                 {
-                    break aaa;
+                    exsitplayer.add((UUID) (Objects.requireNonNull(mpvph.getConfig().getList("exitplayerlist"))).get(i));
                 }
             }
-            if (i<exsitplayer.size())
+            catch (NullPointerException e)
             {
-                event.getPlayer().setFoodLevel(exsitHunger.get(i));
-                exsitplayer.remove(i);
-                exsitHunger.remove(i);
+                System.out.println("§l[§fMan10Spawn§f§l]§途中退出したプレイヤーのロードに失敗しました");
+            }
+            if (exsitplayer.contains(event.getPlayer().getUniqueId()))
+            {
+                exsitHunger.addAll(mpvph.getConfig().getIntegerList("exithungerlist"));
+                exsitplayer.add(event.getPlayer().getUniqueId());
+                exsitHunger.add(pvpplayer.get(event.getPlayer().getUniqueId()));
+                pvpplayer.remove(event.getPlayer().getUniqueId());
+                mpvph.getConfig().set("exitplayerlist",exsitplayer);
+                mpvph.getConfig().set("exithungerlist",exsitHunger);
+                mpvph.saveConfig();
+            }
+            exsitplayer.clear();
+            exsitHunger.clear();
+        }
+    }
+
+    @EventHandler
+    public void PlayerChangedWorldEvent(PlayerChangedWorldEvent event)
+    {
+        if (system)
+        {
+            Player targetPlayer = event.getPlayer();
+            if (targetworld.contains(targetPlayer.getLocation().getWorld().getName()))
+            {
+                if (!pvpplayer.containsKey(targetPlayer.getUniqueId()))
+                {
+                    pvpplayer.put(targetPlayer.getUniqueId(),targetPlayer.getFoodLevel());
+                    targetPlayer.setHealth(respawnhealth);
+                    targetPlayer.setFoodLevel(respawnfood);
+                    targetPlayer.sendMessage("§b[Man10PVPHunger]§ePVPモードを有効化します");
+                }
+            }
+            else if (pvpplayer.containsKey(targetPlayer.getUniqueId()))
+            {
+                targetPlayer.setFoodLevel(pvpplayer.get(targetPlayer.getUniqueId()));
+                pvpplayer.remove(targetPlayer.getUniqueId());
+                targetPlayer.sendMessage("§b[Man10PVPHunger]§ePVPモードを無効化します");
             }
         }
     }
 
     @Override
-    public void onDisable()
+    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args)
     {
-        int i=0;
-        for (UUID key : pvpplayer.keySet())
+        if (!sender.hasPermission("mpvph.op"))
         {
-            exsitplayer.set(i,key);
-            exsitHunger.set(i,pvpplayer.get(key));
-            i++;
+            return null;
         }
-        mpvph.getConfig().set("exitplayerlist",exsitplayer);
-        mpvph.getConfig().set("exithungerlist",exsitHunger);
-        mpvph.saveConfig();
+        if(command.getName().equalsIgnoreCase("mspawn"))
+        {
+            if (args.length == 1)
+            {
+                if (args[0].length() == 0)
+                {
+                    return Arrays.asList("add","delete","off","on","setfood","sethealth");
+                }
+                else if ("on".startsWith(args[0]) && "off".startsWith(args[0]))
+                {
+                    return Arrays.asList("on","off");
+                }
+                else if ("on".startsWith(args[0]))
+                {
+                    return Collections.singletonList("on");
+                }
+                else if ("off".startsWith(args[0]))
+                {
+                    return Collections.singletonList("off");
+                }
+                else if ("add".startsWith(args[0]))
+                {
+                    return Collections.singletonList("add");
+                }
+                else if ("delete".startsWith(args[0]))
+                {
+                    return Collections.singletonList("delete");
+                }
+                else if ("sethealth".startsWith(args[0])&&"setfood".startsWith(args[0]))
+                {
+                    return Arrays.asList("sethealth","setfood");
+                }
+                else if ("sethealth".startsWith(args[0]))
+                {
+                    return Collections.singletonList("sethealth");
+                }
+                else if ("setfood".startsWith(args[0]))
+                {
+                    return Collections.singletonList("setfood");
+                }
+            }
+            else if (args.length==2)
+            {
+                ArrayList<String> list = new ArrayList<>();
+                for (World world : Bukkit.getWorlds())
+                {
+                    list.add(world.getName());
+                }
+                switch (args[0])
+                {
+                    case "add":
+                    case "delete":
+                        return list;
+                    case "setfood":
+                        return Collections.singletonList("<満腹度>");
+                    case "sethealth":
+                        return Collections.singletonList("<体力>");
+                }
+            }
+        }
+        return null;
     }
+
+    @Override
+    public void onDisable(){}
 }
