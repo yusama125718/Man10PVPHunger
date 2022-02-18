@@ -52,6 +52,7 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
         {
             respawnfood = 20;
         }
+        targetworld.addAll(mpvph.getConfig().getStringList("targetworld"));
         getServer().getPluginManager().registerEvents(this, this);
     }
 
@@ -207,9 +208,9 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
     @EventHandler
     public void PlayerRespawnEvent(PlayerRespawnEvent event)
     {
-        System.out.println(pvpplayer);
         if (pvpplayer.containsKey(event.getPlayer().getUniqueId())&&system)
         {
+            System.out.println("a");
             Bukkit.getScheduler().runTaskLater(this, new Runnable()
             {
                 @Override
@@ -218,7 +219,7 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
                     event.getPlayer().setHealth(respawnhealth);
                     event.getPlayer().setFoodLevel(respawnfood);
                 }
-            }, 1);
+            }, 3);
         }
     }
 
@@ -253,56 +254,58 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
     @EventHandler
     public void PlayerJoinEvent(PlayerJoinEvent event)
     {
-        if (system)
+        if (!system)
         {
-            try
-            {
-                for (int i = 0; i < Objects.requireNonNull(mpvph.getConfig().getList("exitplayerlist")).size(); i++)
-                {
-                    exsitplayer.add((UUID) (Objects.requireNonNull(mpvph.getConfig().getList("exitplayerlist"))).get(i));
-                }
-            }
-            catch (NullPointerException e)
-            {
-                System.out.println("§l[§fMan10Spawn§f§l]§途中退出したプレイヤーのロードに失敗しました");
-            }
-            if (exsitplayer.contains(event.getPlayer().getUniqueId()))
-            {
-                exsitHunger.addAll(mpvph.getConfig().getIntegerList("exithungerlist"));
-                exsitplayer.add(event.getPlayer().getUniqueId());
-                exsitHunger.add(pvpplayer.get(event.getPlayer().getUniqueId()));
-                pvpplayer.remove(event.getPlayer().getUniqueId());
-                mpvph.getConfig().set("exitplayerlist",exsitplayer);
-                mpvph.getConfig().set("exithungerlist",exsitHunger);
-                mpvph.saveConfig();
-            }
-            exsitplayer.clear();
-            exsitHunger.clear();
+            return;
         }
+        try
+        {
+            for (int i = 0; i < Objects.requireNonNull(mpvph.getConfig().getList("exitplayerlist")).size(); i++)
+            {
+                exsitplayer.add((UUID) (Objects.requireNonNull(mpvph.getConfig().getList("exitplayerlist"))).get(i));
+            }
+        }
+        catch (NullPointerException e)
+        {
+            System.out.println("§l[§fMan10Spawn§f§l]§途中退出したプレイヤーのロードに失敗しました");
+        }
+        if (exsitplayer.contains(event.getPlayer().getUniqueId()))
+        {
+            exsitHunger.addAll(mpvph.getConfig().getIntegerList("exithungerlist"));
+            exsitplayer.add(event.getPlayer().getUniqueId());
+            exsitHunger.add(pvpplayer.get(event.getPlayer().getUniqueId()));
+            pvpplayer.remove(event.getPlayer().getUniqueId());
+            mpvph.getConfig().set("exitplayerlist",exsitplayer);
+            mpvph.getConfig().set("exithungerlist",exsitHunger);
+            mpvph.saveConfig();
+        }
+        exsitplayer.clear();
+        exsitHunger.clear();
     }
 
     @EventHandler
     public void PlayerChangedWorldEvent(PlayerChangedWorldEvent event)
     {
-        if (system)
+        if (!system)
         {
-            Player targetPlayer = event.getPlayer();
-            if (targetworld.contains(targetPlayer.getLocation().getWorld().getName()))
+            return;
+        }
+        Player targetPlayer = event.getPlayer();
+        if (targetworld.contains(targetPlayer.getLocation().getWorld().getName()))
+        {
+            if (!pvpplayer.containsKey(targetPlayer.getUniqueId()))
             {
-                if (!pvpplayer.containsKey(targetPlayer.getUniqueId()))
-                {
-                    pvpplayer.put(targetPlayer.getUniqueId(),targetPlayer.getFoodLevel());
-                    targetPlayer.setHealth(respawnhealth);
-                    targetPlayer.setFoodLevel(respawnfood);
-                    targetPlayer.sendMessage("§b[Man10PVPHunger]§ePVPモードを有効化します");
-                }
+                pvpplayer.put(targetPlayer.getUniqueId(),targetPlayer.getFoodLevel());
+                targetPlayer.setHealth(respawnhealth);
+                targetPlayer.setFoodLevel(respawnfood);
+                targetPlayer.sendMessage("§b[Man10PVPHunger]§ePVPモードを有効化します");
             }
-            else if (pvpplayer.containsKey(targetPlayer.getUniqueId()))
-            {
-                targetPlayer.setFoodLevel(pvpplayer.get(targetPlayer.getUniqueId()));
-                pvpplayer.remove(targetPlayer.getUniqueId());
-                targetPlayer.sendMessage("§b[Man10PVPHunger]§ePVPモードを無効化します");
-            }
+        }
+        else if (pvpplayer.containsKey(targetPlayer.getUniqueId()))
+        {
+            targetPlayer.setFoodLevel(pvpplayer.get(targetPlayer.getUniqueId()));
+            pvpplayer.remove(targetPlayer.getUniqueId());
+            targetPlayer.sendMessage("§b[Man10PVPHunger]§ePVPモードを無効化します");
         }
     }
 
