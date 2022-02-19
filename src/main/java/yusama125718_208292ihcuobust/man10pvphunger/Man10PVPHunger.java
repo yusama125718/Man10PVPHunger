@@ -24,8 +24,6 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
     boolean system;
     int respawnfood;
     double respawnhealth;
-    List<UUID> exsitplayer = new ArrayList<>();
-    List<Integer> exsitHunger = new ArrayList<>();
     HashMap<UUID, Integer> pvpplayer = new HashMap<>();
     List<String> targetworld = new ArrayList<>();
 
@@ -226,67 +224,15 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
     @EventHandler
     public void PlayerQuitEvent(PlayerQuitEvent event)
     {
-        if (pvpplayer.containsKey(event.getPlayer().getUniqueId()))
-        {
-            try
-            {
-                for (int i = 0; i < Objects.requireNonNull(mpvph.getConfig().getList("exitplayerlist")).size(); i++)
-                {
-                    exsitplayer.add(UUID.fromString(Objects.requireNonNull(mpvph.getConfig().getStringList("exitplayerlist")).get(i)));
-                }
-            }
-            catch (NullPointerException e)
-            {
-                System.out.println("§l[§fMan10Spawn§f§l]§途中退出したプレイヤーのロードに失敗しました");
-            }
-            exsitHunger.addAll(mpvph.getConfig().getIntegerList("exithungerlist"));
-            exsitplayer.add(event.getPlayer().getUniqueId());
-            exsitHunger.add(pvpplayer.get(event.getPlayer().getUniqueId()));
-            pvpplayer.remove(event.getPlayer().getUniqueId());
-            List<String> addlist = mpvph.getConfig().getStringList("exitplayerlist");
-            addlist.add(event.getPlayer().getUniqueId().toString());
-            mpvph.getConfig().set("exitplayerlist",addlist);
-            mpvph.getConfig().set("exithungerlist",exsitHunger);
-            mpvph.saveConfig();
-            addlist.clear();
-            exsitplayer.clear();
-            exsitHunger.clear();
-        }
-    }
-
-    @EventHandler
-    public void PlayerJoinEvent(PlayerJoinEvent event)
-    {
         if (!system)
         {
             return;
         }
-        try
+        if (pvpplayer.containsKey(event.getPlayer().getUniqueId()))
         {
-            for (int i = 0; i < Objects.requireNonNull(mpvph.getConfig().getList("exitplayerlist")).size(); i++)
-            {
-                exsitplayer.add(UUID.fromString(Objects.requireNonNull(mpvph.getConfig().getStringList("exitplayerlist")).get(i)));
-            }
-        }
-        catch (NullPointerException e)
-        {
-            System.out.println("§l[§fMan10Spawn§f§l]§途中退出したプレイヤーのロードに失敗しました");
-        }
-        if (exsitplayer.contains(event.getPlayer().getUniqueId()))
-        {
-            exsitHunger.addAll(mpvph.getConfig().getIntegerList("exithungerlist"));
-            exsitplayer.remove(event.getPlayer().getUniqueId());
-            exsitHunger.remove(pvpplayer.get(event.getPlayer().getUniqueId()));
-            List<String> addlist = mpvph.getConfig().getStringList("exitplayerlist");
-            addlist.remove(event.getPlayer().getUniqueId().toString());
+            event.getPlayer().setFoodLevel(pvpplayer.get(event.getPlayer().getUniqueId()));
             pvpplayer.remove(event.getPlayer().getUniqueId());
-            mpvph.getConfig().set("exitplayerlist",addlist);
-            mpvph.getConfig().set("exithungerlist",exsitHunger);
-            mpvph.saveConfig();
-            addlist.clear();
         }
-        exsitplayer.clear();
-        exsitHunger.clear();
     }
 
     @EventHandler
@@ -322,7 +268,7 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
         {
             return null;
         }
-        if(command.getName().equalsIgnoreCase("mspawn"))
+        if(command.getName().equalsIgnoreCase("mpvph"))
         {
             if (args.length == 1)
             {
