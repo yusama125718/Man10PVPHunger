@@ -14,6 +14,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.*;
 import org.bukkit.plugin.java.JavaPlugin;
+import sun.util.resources.ext.CalendarData_da;
 
 import java.util.*;
 
@@ -210,7 +211,6 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
     {
         if (pvpplayer.containsKey(event.getPlayer().getUniqueId())&&system)
         {
-            System.out.println("a");
             Bukkit.getScheduler().runTaskLater(this, new Runnable()
             {
                 @Override
@@ -232,7 +232,7 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
             {
                 for (int i = 0; i < Objects.requireNonNull(mpvph.getConfig().getList("exitplayerlist")).size(); i++)
                 {
-                    exsitplayer.add((UUID) (Objects.requireNonNull(mpvph.getConfig().getList("exitplayerlist"))).get(i));
+                    exsitplayer.add(UUID.fromString(Objects.requireNonNull(mpvph.getConfig().getStringList("exitplayerlist")).get(i)));
                 }
             }
             catch (NullPointerException e)
@@ -243,9 +243,12 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
             exsitplayer.add(event.getPlayer().getUniqueId());
             exsitHunger.add(pvpplayer.get(event.getPlayer().getUniqueId()));
             pvpplayer.remove(event.getPlayer().getUniqueId());
-            mpvph.getConfig().set("exitplayerlist",exsitplayer);
+            List<String> addlist = mpvph.getConfig().getStringList("exitplayerlist");
+            addlist.add(event.getPlayer().getUniqueId().toString());
+            mpvph.getConfig().set("exitplayerlist",addlist);
             mpvph.getConfig().set("exithungerlist",exsitHunger);
             mpvph.saveConfig();
+            addlist.clear();
             exsitplayer.clear();
             exsitHunger.clear();
         }
@@ -262,7 +265,7 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
         {
             for (int i = 0; i < Objects.requireNonNull(mpvph.getConfig().getList("exitplayerlist")).size(); i++)
             {
-                exsitplayer.add((UUID) (Objects.requireNonNull(mpvph.getConfig().getList("exitplayerlist"))).get(i));
+                exsitplayer.add(UUID.fromString(Objects.requireNonNull(mpvph.getConfig().getStringList("exitplayerlist")).get(i)));
             }
         }
         catch (NullPointerException e)
@@ -274,10 +277,13 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
             exsitHunger.addAll(mpvph.getConfig().getIntegerList("exithungerlist"));
             exsitplayer.remove(event.getPlayer().getUniqueId());
             exsitHunger.remove(pvpplayer.get(event.getPlayer().getUniqueId()));
+            List<String> addlist = mpvph.getConfig().getStringList("exitplayerlist");
+            addlist.remove(event.getPlayer().getUniqueId().toString());
             pvpplayer.remove(event.getPlayer().getUniqueId());
-            mpvph.getConfig().set("exitplayerlist",exsitplayer);
+            mpvph.getConfig().set("exitplayerlist",addlist);
             mpvph.getConfig().set("exithungerlist",exsitHunger);
             mpvph.saveConfig();
+            addlist.clear();
         }
         exsitplayer.clear();
         exsitHunger.clear();
