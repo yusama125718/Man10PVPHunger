@@ -272,8 +272,8 @@ public final class Man10PVPHunger extends JavaPlugin implements Listener, Comman
         if (exsitplayer.contains(event.getPlayer().getUniqueId()))
         {
             exsitHunger.addAll(mpvph.getConfig().getIntegerList("exithungerlist"));
-            exsitplayer.add(event.getPlayer().getUniqueId());
-            exsitHunger.add(pvpplayer.get(event.getPlayer().getUniqueId()));
+            exsitplayer.remove(event.getPlayer().getUniqueId());
+            exsitHunger.remove(pvpplayer.get(event.getPlayer().getUniqueId()));
             pvpplayer.remove(event.getPlayer().getUniqueId());
             mpvph.getConfig().set("exitplayerlist",exsitplayer);
             mpvph.getConfig().set("exithungerlist",exsitHunger);
